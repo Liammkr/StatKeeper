@@ -1,0 +1,68 @@
+Base Project
+    |
+    Landing Page (/)
+    |     |
+    |     Home
+    |       | 
+    |       Team Select / Make New Team
+    |
+    Select Game / New Game / Court (/{team})
+                     |
+                     |
+                     Topbar with new or past games + overall games 
+                     |
+                     Main content with half court with center facing bottom and
+                     |                            |
+                     |                           When click on court, log shot at that location and ask for which player scored it
+                     |
+                     Put heat map of shots on court and when hovered display which player is making from there and how many makes
+
+Extra 
+  |
+  Log misses per player and count percentage from each spot 1/10
+  |
+  Load data from huddle to auto load past games of a team and visualize heat 8/10
+  |
+  Export import teams / games data by json on (/) 1/10
+
+Extra +
+  |
+  Firebase login system to store games on cloud and share with other members of "your team" 9/10
+  |
+  AI shot detection
+
+
+
+JSON  Structure:
+
+data {
+  teams : {
+    team1 : {
+      teamname: name;
+      teamimage: image;
+      games : {
+        game1 : {
+          shots : {
+            [
+              {
+                player : 1;
+                position : "paint";
+                makeormiss : "make";
+              },
+              {
+                player : 1;
+                position : "paint";
+                makeormiss : "make";
+              },
+              {
+                player : 1;
+                position : "paint";
+                makeormiss : "make";
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

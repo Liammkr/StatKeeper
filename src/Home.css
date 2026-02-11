@@ -1,0 +1,95 @@
+.mainLogo {
+  height: 70px;
+  width: 70px;
+  border-color: white;
+}
+.topBar {
+  display: flex;
+  align-items: center;
+  margin: 50px;
+  border-radius: 10px;
+  border-color: white;
+}
+.logoName {
+  color: #f8faff;
+}
+.teams {
+  padding: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  justify-content: center;
+  margin: 50px;
+  color: white;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(90deg, #5b2eff, #d94fd5, #ff5fa2) border-box;
+}
+.teamCard {
+  width: 200px;
+  height: 200px;
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+  justify-content: center;
+  text-align: center;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease;
+}
+.teamCard:hover {
+  transform: translateY(-2px);
+  cursor: pointer;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(90deg, #5b2eff, #d94fd5, #ff5fa2) border-box;
+}
+.newteamplus {
+  font-size: 40px;
+  color: white;
+}
+.teamLogo {
+  height: 100px;
+  width: 100px;
+}
+.teamDescription {
+  margin-top: 0px;
+  color: white;
+  font-size: 10px;
+}
+.teamName {
+  margin-bottom: 5px;
+}
+.deleteIcon {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  color: #ff4d6d;
+  opacity: 0.78;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+.editIcon {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  color: grey;
+  width: 12px;
+  opacity: 0.78;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.deleteIcon:hover,
+.editIcon:hover {
+  opacity: 1;
+  transform: scale(1.06);
+}

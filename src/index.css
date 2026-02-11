@@ -1,0 +1,6 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap");
+body {
+  background-color: #050816;
+  overflow-x: hidden;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}
