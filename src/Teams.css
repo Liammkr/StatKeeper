@@ -2,11 +2,19 @@ body {
   color: white;
 }
 .selectGame {
+  height: 100px;
   padding: 10px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 20px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 12px 16px;
+  scroll-padding-left: 16px;
+
+  -webkit-overflow-scrolling: touch;
   margin: 50px;
   margin-top: 0px;
   margin-bottom: 25px;
@@ -16,6 +24,9 @@ body {
   background:
     linear-gradient(#000, #000) padding-box,
     linear-gradient(90deg, #5b2eff, #d94fd5, #ff5fa2) border-box;
+}
+.selectGame > * {
+  flex: 0 0 auto;
 }
 .topBarBack {
   display: flex;
@@ -41,6 +52,7 @@ body {
   cursor: pointer;
 }
 .gameCard {
+  flex: 0 0 auto;
   width: 100px;
   height: 100px;
   position: relative;
@@ -101,4 +113,41 @@ body {
 }
 .shotAmmount {
   font-size: 10px;
+}
+.deleteIconGames {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  color: #ff4d6d;
+  opacity: 0.78;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+.editIconGames {
+  position: absolute;
+  top: -3px;
+  right: 0px;
+  color: grey;
+  width: 12px;
+  opacity: 0.78;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.deleteIconGames:hover,
+.editIconGames:hover {
+  opacity: 1;
+  transform: scale(1.06);
+}
+.scrollRow::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollRow {
+  scrollbar-width: none;
+}
+.scrollRow {
+  scroll-behavior: smooth;
 }
