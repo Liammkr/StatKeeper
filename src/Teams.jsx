@@ -8,6 +8,9 @@ import "./Teams.css";
 function Teams() {
   const [games, setGames] = useState([]);
   const teamID = useParams();
+  const [selectedGameId, setSelectedGameId] = useState(null);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [selectedShots, setSelectedShots] = useState([]);
   const [hydrated, setHydrated] = useState(false);
   const dataLoad = JSON.parse(localStorage.getItem("data"));
   const team = dataLoad.teams.find((t) => t.id == teamID.id);
@@ -107,6 +110,83 @@ function Teams() {
     });
   }
 
+  function focusGame(gameId) {
+    setSelectedGameId(gameId);
+
+    if (gameId === "overall") {
+      const allShots = games.flatMap((game) => game.shots || []);
+      setSelectedShots(allShots);
+      console.log(allShots);
+      return;
+    }
+
+    const game = games.find((t) => t.id === gameId);
+    const shots = game?.shots || [];
+    setSelectedShots(shots);
+    console.log(shots);
+  }
+  async function setNumber() {
+    if (selectedGameId == null) {
+      toast.error("Select a game to log shots");
+      return null;
+    }
+    if (selectedGameId === "overall") {
+      toast.error("Select a specific game to log shots");
+      return null;
+    }
+    if (selectedGameId != null) {
+      const { value: name } = await Swal.fire({
+        title: "Player Number",
+        input: "number",
+        inputValue: team?.name || "",
+        inputPlaceholder: "Player Number",
+        showCancelButton: true,
+        confirmButtonText: "Save",
+        cancelButtonText: "Cancel",
+        buttonsStyling: false,
+        customClass: {
+          popup: "swalPopup",
+          title: "swalTitle",
+          htmlContainer: "swalText",
+          input: "swalInput",
+          confirmButton: "swalConfirm",
+          cancelButton: "swalCancel",
+        },
+        inputValidator: (v) => {
+          if (!v || !v.trim()) return "Number can't be empty";
+        },
+      }).then((result) => {
+        if (result.isConfirmed) {
+          setSelectedPlayer(name);
+          console.log(selectedPlayer);
+        }
+      });
+
+      if (!name) return;
+    }
+  }
+  function logShot(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setSelectedShots((prev) => {
+      const newShot = {
+        id: Date.now(),
+        x: x,
+        y: y,
+      };
+      return [...prev, newShot];
+    });
+    const datastate = JSON.parse(localStorage.getItem("data"));
+    console.log(teamID.id);
+    console.log(
+      datastate.teams
+        .find((t) => t.id === Number(teamID.id))
+        .games.find((g) => g.id === selectedGameId).shots,
+    );
+    console.log(selectedShots);
+  }
+
   return (
     <>
       <Toaster position="top-right" theme="dark" richColors closeButton />
@@ -124,13 +204,40 @@ function Teams() {
           <p className="newgameplus">+</p>
         </div>
         {games.length > 1 && (
-          <div className="gameCard">
+          <div
+            className="gameCard"
+            style={{
+              border:
+                selectedGameId === "overall"
+                  ? "1px solid white"
+                  : "1px solid rgba(255, 255, 255, 0.12)",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              focusGame("overall");
+            }}
+            id={"overall"}
+          >
             <p className="gameName">Overall</p>
             <p className="shotAmmount">All Shots Logged</p>
           </div>
         )}
         {games.map((game) => (
-          <div className="gameCard" key={game.id}>
+          <div
+            className="gameCard"
+            key={game.id}
+            id={game.id}
+            style={{
+              border:
+                selectedGameId === game.id
+                  ? "1px solid white"
+                  : "1px solid rgba(255, 255, 255, 0.12)",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              focusGame(game.id);
+            }}
+          >
             <FaTrash
               className="deleteIconGames"
               onClick={(e) => {
@@ -151,6 +258,13 @@ function Teams() {
           </div>
         ))}
       </div>
+      <div
+        className="basketballBoard"
+        onClick={(e) => {
+          e.stopPropagation();
+          setNumber(() => logShot());
+        }}
+      ></div>
     </>
   );
 }

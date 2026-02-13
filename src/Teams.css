@@ -90,6 +90,7 @@ body {
   margin-bottom: 5px;
 }
 .basketballBoard {
+  height: 500px;
   width: 50vw;
   padding: 30px;
   display: flex;
