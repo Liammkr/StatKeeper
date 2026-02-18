@@ -90,13 +90,13 @@ body {
   margin-bottom: 5px;
 }
 .basketballBoard {
-  height: 500px;
+  aspect-ratio: 1.1 / 1;
+  position: relative;
   width: 50vw;
-  padding: 30px;
+  padding: 2%;
   display: flex;
   flex-wrap: wrap;
   gap: 30px;
-  justify-content: center;
   margin: 50px;
   margin-top: 0px;
   color: white;
@@ -107,7 +107,11 @@ body {
     linear-gradient(90deg, #5b2eff, #d94fd5, #ff5fa2) border-box;
 }
 .boardImage {
-  width: 40vw;
+  position: absolute;
+  top: 2%;
+  left: 2%;
+  width: 96%;
+  height: 96%;
 }
 .gameDate {
   font-size: 8px;
@@ -151,4 +155,14 @@ body {
 }
 .scrollRow {
   scroll-behavior: smooth;
+}
+.shot {
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  background-color: white;
+  color: black;
+}
+.boardImage:hover {
+  cursor: crosshair;
 }

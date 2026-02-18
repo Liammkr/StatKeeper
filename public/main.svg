@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 550" width="600" height="550">
+  <rect x="0" y="0" width="600" height="550" fill="transparent"/>
+  <g fill="none" stroke="red" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="0" y="0" width="600" height="550"/>
+    <circle cx="300" cy="545" r="155"/>
+    <line x1="212" y1="0" x2="212" y2="242"/>
+    <line x1="388" y1="0" x2="388" y2="242"/>
+    <line x1="212" y1="240" x2="388" y2="240"/>
+    <defs>
+    <clipPath id="halfClip">
+      <rect x="0" y="242" width="600" height="308"/>
+    </clipPath>
+    </defs>
+    <circle cx="300" cy="242" r="88" clip-path="url(#halfClip)"/>
+    <line x1="50" y1="0" x2="50" y2="85"/>
+    <line x1="550" y1="0" x2="550" y2="85"/>
+    <clipPath id="halfClip2">
+      <rect x="0" y="85" width="600" height="308"/>
+    </clipPath>
+    <circle cx="300" cy="80" r="250" clip-path="url(#halfClip2)"/>
+
+  </g>
+</svg>

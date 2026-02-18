@@ -9,7 +9,6 @@ function Teams() {
   const [games, setGames] = useState([]);
   const teamID = useParams();
   const [selectedGameId, setSelectedGameId] = useState(null);
-  const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [selectedShots, setSelectedShots] = useState([]);
   const [hydrated, setHydrated] = useState(false);
   const dataLoad = JSON.parse(localStorage.getItem("data"));
@@ -30,10 +29,20 @@ function Teams() {
     setHydrated(true);
   }, []);
   useEffect(() => {
+    if (selectedGameId == null) return;
+
+    if (selectedGameId === "overall") {
+      setSelectedShots(games.flatMap((g) => g.shots || []));
+      return;
+    }
+
+    const g = games.find((x) => x.id === selectedGameId);
+    setSelectedShots(g?.shots || []);
+  }, [games, selectedGameId]);
+  useEffect(() => {
     if (!hydrated) return;
     const latestData = JSON.parse(localStorage.getItem("data"));
     latestData.teams.find((t) => t.id == teamID.id).games = games;
-    console.log(latestData);
     localStorage.setItem("data", JSON.stringify(latestData));
   }, [games]);
   function addGame() {
@@ -125,7 +134,7 @@ function Teams() {
     setSelectedShots(shots);
     console.log(shots);
   }
-  async function setNumber() {
+  async function setNumber(e) {
     if (selectedGameId == null) {
       toast.error("Select a game to log shots");
       return null;
@@ -135,6 +144,10 @@ function Teams() {
       return null;
     }
     if (selectedGameId != null) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      console.log(x, y);
       const { value: name } = await Swal.fire({
         title: "Player Number",
         input: "number",
@@ -155,38 +168,33 @@ function Teams() {
         inputValidator: (v) => {
           if (!v || !v.trim()) return "Number can't be empty";
         },
-      }).then((result) => {
-        if (result.isConfirmed) {
-          setSelectedPlayer(name);
-          console.log(selectedPlayer);
-        }
       });
 
       if (!name) return;
-    }
-  }
-  function logShot(e) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setSelectedShots((prev) => {
       const newShot = {
         id: Date.now(),
         x: x,
         y: y,
+        player: name,
       };
-      return [...prev, newShot];
-    });
-    const datastate = JSON.parse(localStorage.getItem("data"));
-    console.log(teamID.id);
-    console.log(
+      setSelectedShots((prev) => {
+        return [...prev, newShot];
+      });
+      const datastate = JSON.parse(localStorage.getItem("data"));
       datastate.teams
         .find((t) => t.id === Number(teamID.id))
-        .games.find((g) => g.id === selectedGameId).shots,
-    );
-    console.log(selectedShots);
+        .games.find((g) => g.id === selectedGameId)
+        .shots.push(newShot);
+      localStorage.setItem("data", JSON.stringify(datastate));
+      setGames((prev) =>
+        prev.map((g) =>
+          g.id === selectedGameId
+            ? { ...g, shots: [...(g.shots || []), newShot] }
+            : g,
+        ),
+      );
+    }
   }
-
   return (
     <>
       <Toaster position="top-right" theme="dark" richColors closeButton />
@@ -258,13 +266,30 @@ function Teams() {
           </div>
         ))}
       </div>
-      <div
-        className="basketballBoard"
-        onClick={(e) => {
-          e.stopPropagation();
-          setNumber(() => logShot());
-        }}
-      ></div>
+      <div className="basketballBoard" onClick={setNumber}>
+        <img
+          src="/main.svg"
+          style={{
+            position: "absolute",
+            top: "0",
+            left: "0",
+            width: "96%",
+            padding: "2%",
+          }}
+        />
+        {selectedShots.map((shot) => (
+          <div
+            key={shot.id}
+            className="shot"
+            style={{
+              left: `${shot.x * 100}%`,
+              top: `${shot.y * 100}%`,
+            }}
+          >
+            {shot.player}
+          </div>
+        ))}
+      </div>
     </>
   );
 }
