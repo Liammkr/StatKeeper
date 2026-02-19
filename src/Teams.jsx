@@ -369,8 +369,25 @@ function Teams() {
             {selectedShots.reduce(
               (sum, shot) => sum + (shot.points == 2 ? 1 : 0),
               0,
-            )}{" "}
-            (50%)
+            )}
+            {" ("}
+            {(() => {
+              const made = selectedShots.reduce(
+                (sum, shot) =>
+                  sum + (shot.result === "make" && shot.points === 2 ? 1 : 0),
+                0,
+              );
+
+              const attempts = selectedShots.reduce(
+                (sum, shot) => sum + (shot.points === 2 ? 1 : 0),
+                0,
+              );
+
+              return attempts === 0
+                ? "0%"
+                : Math.round((made / attempts) * 100) + "%";
+            })()}
+            {")"}
           </p>
           <p className="statStat">
             3pt:{" "}
@@ -383,14 +400,25 @@ function Teams() {
             {selectedShots.reduce(
               (sum, shot) => sum + (shot.points == 3 ? 1 : 0),
               0,
-            )}{" "}
-            ((
-            {selectedShots.reduce(
-              (sum, shot) =>
-                sum + (shot.result == "make" && shot.points == 3 ? 1 : 0),
-              0,
             )}
-            )/%)
+            {" ("}
+            {(() => {
+              const made = selectedShots.reduce(
+                (sum, shot) =>
+                  sum + (shot.result === "make" && shot.points === 3 ? 1 : 0),
+                0,
+              );
+
+              const attempts = selectedShots.reduce(
+                (sum, shot) => sum + (shot.points === 3 ? 1 : 0),
+                0,
+              );
+
+              return attempts === 0
+                ? "0%"
+                : Math.round((made / attempts) * 100) + "%";
+            })()}
+            {")"}
           </p>
           <p className="stattitle">Total Score</p>
           <p className="statStat">
@@ -400,10 +428,35 @@ function Teams() {
             )}{" "}
             pts
           </p>
-          <p className="stattitle">Top Scorers</p>
-          <p className="statStat">1. #x : xx pts</p>
-          <p className="statStat">2. #x : xx pts</p>
-          <p className="statStat">3. #x : xx pts</p>
+          {(() => {
+            const topScorers = Object.entries(
+              selectedShots.reduce((acc, shot) => {
+                if (shot.result !== "make") return acc;
+                const player = shot.player;
+                const pts = Number(shot.points) || 0;
+                acc[player] = (acc[player] || 0) + pts;
+                return acc;
+              }, {}),
+            )
+              .map(([player, pts]) => ({ player, pts }))
+              .sort((a, b) => b.pts - a.pts)
+              .slice(0, 3);
+
+            return (
+              <>
+                <p className="stattitle">Top Scorers</p>
+
+                {[0, 1, 2].map((i) => {
+                  const p = topScorers[i];
+                  return (
+                    <p key={i} className="statStat">
+                      {i + 1}. {p ? `#${p.player} : ${p.pts} pts` : "--"}
+                    </p>
+                  );
+                })}
+              </>
+            );
+          })()}
         </div>
       </div>
     </>
