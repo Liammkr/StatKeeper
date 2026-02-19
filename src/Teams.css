@@ -15,7 +15,7 @@ body {
   scroll-padding-left: 16px;
 
   -webkit-overflow-scrolling: touch;
-  margin: 50px;
+  margin: 25px;
   margin-top: 0px;
   margin-bottom: 25px;
   color: white;
@@ -31,7 +31,7 @@ body {
 .topBarBack {
   display: flex;
   align-items: center;
-  margin: 50px;
+  margin: 25px;
   margin-bottom: 25px;
   margin-top: 25px;
   border-radius: 10px;
@@ -93,18 +93,17 @@ body {
   aspect-ratio: 1.1 / 1;
   position: relative;
   width: 50vw;
+  min-width: 350px;
   padding: 2%;
   display: flex;
   flex-wrap: wrap;
   gap: 30px;
-  margin: 50px;
-  margin-top: 0px;
   color: white;
   border-radius: 20px;
   border: 1px solid transparent;
   background:
     linear-gradient(#000, #000) padding-box,
-    linear-gradient(90deg, #5b2eff, #d94fd5, #ff5fa2) border-box;
+    linear-gradient(90deg, #5b2eff, #d94fd5) border-box;
 }
 .boardImage {
   position: absolute;
@@ -158,11 +157,37 @@ body {
 }
 .shot {
   position: absolute;
-  width: 25px;
-  height: 25px;
-  background-color: white;
-  color: black;
+  border-radius: 40%;
+  width: 3%;
+  height: 3%;
+  border: 1px solid white;
+  color: white;
+  text-align: center;
+  justify-content: center;
+  font-size: 1.2vw;
 }
-.boardImage:hover {
+.basketballBoard:hover {
   cursor: crosshair;
+}
+.statSheet {
+  text-align: center;
+  min-width: 350px;
+  width: 20vw;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(90deg, #d94fd5, #ff5fa2) border-box;
+}
+.stattitle {
+  font-size: 20px;
+}
+.statStat {
+  font-size: 15px;
+}
+.maincontentbox {
+  gap: 25px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
 }
