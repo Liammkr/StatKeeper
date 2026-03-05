@@ -11,8 +11,19 @@ function Home() {
 
   useEffect(() => {
     const raw = localStorage.getItem("data");
-    const parsed = raw ? JSON.parse(raw) : { teams: [] };
-
+    const parsed = raw
+      ? JSON.parse(raw)
+      : {
+          teams: [
+            {
+              id: 1772124503874,
+              name: "My Team",
+              games: [],
+              logo: "/sk.png",
+              myteam: true,
+            },
+          ],
+        };
     if (!raw) {
       localStorage.setItem("data", JSON.stringify(parsed));
     }
@@ -32,16 +43,18 @@ function Home() {
   }, [teams]);
   document.title = "StatKeeper | Home";
   function createNewTeam() {
-    setTeams((prev) => {
-      const nextNumber = prev.length + 1;
-      const newTeam = {
-        id: Date.now(),
-        name: `Team ${nextNumber}`,
-        games: [],
-        logo: "/sk.png",
-      };
-      return [...prev, newTeam];
-    });
+    const nextNumber = teams.length + 1;
+    const newTeam = {
+      id: Date.now(),
+      name: `Team ${nextNumber}`,
+      games: [],
+      logo: "/sk.png",
+      myteam: false,
+    };
+
+    setTeams((prev) => [...prev, newTeam]);
+
+    editName(newTeam.id, newTeam.name);
     toast.success("Team Created");
   }
   function deleteTeam(teamId) {
@@ -71,12 +84,13 @@ function Home() {
       }
     });
   }
-  async function editName(id) {
+  async function editName(id, fallbackName = "") {
     const team = teams.find((t) => t.id === id);
+    console.log(team);
     const { value: name } = await Swal.fire({
       title: "Edit team name",
       input: "text",
-      inputValue: team?.name || "",
+      inputValue: fallbackName || team?.name || "",
       inputPlaceholder: "Team name",
       showCancelButton: true,
       confirmButtonText: "Save",
@@ -111,39 +125,72 @@ function Home() {
         <img src="/sk.png" alt="Logo" className="mainLogo" />
         <p className="logoName">StatKeeper</p>
       </div>
+      <div className="teamtitles">My Team</div>
+      <div className="teams">
+        {teams.map((team) =>
+          team.myteam ? (
+            <div
+              className="teamCard"
+              key={team.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = "/team/" + team.id;
+              }}
+            >
+              <FaPencilAlt
+                className="editIcon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  editName(team.id);
+                }}
+              />
+              <p className="teamName">{team.name}</p>
+              <p className="teamDescription">
+                {team.games.length} Games Logged
+              </p>
+              <img src={team.logo} alt="Logo" className="teamLogo" />
+            </div>
+          ) : null,
+        )}
+      </div>
+      <div className="teamtitles">Opponent Teams</div>
       <div className="teams">
         <div className="teamCard" id="newTeam" onClick={createNewTeam}>
           <p className="teamName">Create New Team</p>
           <p className="newteamplus">+</p>
         </div>
-        {teams.map((team) => (
-          <div
-            className="teamCard"
-            key={team.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              window.location.href = "/team/" + team.id;
-            }}
-          >
-            <FaTrash
-              className="deleteIcon"
+        {teams.map((team) =>
+          team.myteam ? null : (
+            <div
+              className="teamCard"
+              key={team.id}
               onClick={(e) => {
                 e.stopPropagation();
-                confirmDeleteTeam(() => deleteTeam(team.id));
+                window.location.href = "/team/" + team.id;
               }}
-            />
-            <FaPencilAlt
-              className="editIcon"
-              onClick={(e) => {
-                e.stopPropagation();
-                editName(team.id);
-              }}
-            />
-            <p className="teamName">{team.name}</p>
-            <p className="teamDescription">{team.games.length} Games Logged</p>
-            <img src={team.logo} alt="Logo" className="teamLogo" />
-          </div>
-        ))}
+            >
+              <FaTrash
+                className="deleteIcon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  confirmDeleteTeam(() => deleteTeam(team.id));
+                }}
+              />
+              <FaPencilAlt
+                className="editIcon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  editName(team.id);
+                }}
+              />
+              <p className="teamName">{team.name}</p>
+              <p className="teamDescription">
+                {team.games.length} Games Logged
+              </p>
+              <img src={team.logo} alt="Logo" className="teamLogo" />
+            </div>
+          ),
+        )}
       </div>
     </>
   );

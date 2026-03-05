@@ -93,3 +93,10 @@
   opacity: 1;
   transform: scale(1.06);
 }
+.teamtitles {
+  color: white;
+  margin-left: 55px;
+  margin-top: 0px;
+  margin-bottom: -35px;
+  font-size: 22px;
+}

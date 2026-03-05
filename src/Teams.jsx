@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Toaster, toast } from "sonner";
 import { FaArrowLeft, FaTrash, FaPencilAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
@@ -7,11 +7,18 @@ import "./Teams.css";
 
 function Teams() {
   const [games, setGames] = useState([]);
+  const [homeplayers, sethomeplayers] = useState([]);
+  const [awayplayers, setawayplayers] = useState([]);
+  const [selectedawayplayers, setselectedawayplayers] = useState([]);
+  const [selectedshotsview, setselectedshotsview] = useState("both");
   const teamID = useParams();
   const [selectedGameId, setSelectedGameId] = useState(null);
   const [selectedShots, setSelectedShots] = useState([]);
+  const [selectedplayer, setselectedplayer] = useState([]);
   const [hydrated, setHydrated] = useState(false);
   const [paintHovered, setPaintHovered] = useState(false);
+  const boardRef = useRef(null);
+  const [boardHeight, setBoardHeight] = useState(0);
   const dataLoad = JSON.parse(localStorage.getItem("data"));
   const team = dataLoad.teams.find((t) => t.id == teamID.id);
   if (!team) {
@@ -27,18 +34,23 @@ function Teams() {
     }
 
     setGames(parsed.teams.find((t) => t.id == teamID.id)?.games || []);
+    sethomeplayers(parsed.teams.find((t) => t.id == teamID.id)?.roster || []);
     setHydrated(true);
   }, []);
   useEffect(() => {
     if (selectedGameId == null) return;
 
-    if (selectedGameId === "overall") {
+    if (selectedGameId === "Overall") {
       setSelectedShots(games.flatMap((g) => g.shots || []));
+      setselectedawayplayers([]);
+      setselectedshotsview("both");
       return;
     }
 
     const g = games.find((x) => x.id === selectedGameId);
+    setselectedawayplayers(g?.roster || []);
     setSelectedShots(g?.shots || []);
+    setselectedshotsview("both");
   }, [games, selectedGameId]);
   useEffect(() => {
     if (!hydrated) return;
@@ -46,6 +58,32 @@ function Teams() {
     latestData.teams.find((t) => t.id == teamID.id).games = games;
     localStorage.setItem("data", JSON.stringify(latestData));
   }, [games]);
+
+  useEffect(() => {
+    if (!boardRef.current) return;
+
+    const el = boardRef.current;
+
+    const update = () => {
+      setBoardHeight(el.getBoundingClientRect().height);
+    };
+
+    update();
+
+    const ro = new ResizeObserver(() => {
+      update();
+    });
+
+    ro.observe(el);
+
+    window.addEventListener("resize", update);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
   function addGame() {
     setGames((prev) => {
       const nextNumber = prev.length + 1;
@@ -53,11 +91,79 @@ function Teams() {
         id: Date.now(),
         name: `Opponent ${nextNumber}`,
         shots: [],
+        roster: [],
         date: new Date().toLocaleDateString("en-GB"),
       };
       return [...prev, newGame];
     });
     toast.success("New Game Added");
+  }
+  async function addPlayer(side) {
+    if (
+      selectedGameId == null ||
+      (selectedGameId === "Overall" && side != "home")
+    ) {
+      toast.error("Select a game to add players");
+      return;
+    }
+    const { value: name } = await Swal.fire({
+      title: "Create New Player",
+      input: "number",
+      inputValue: "",
+      inputPlaceholder: "Player number",
+      showCancelButton: true,
+      confirmButtonText: "Save",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        popup: "swalPopup",
+        title: "swalTitle",
+        htmlContainer: "swalText",
+        input: "swalInput",
+        confirmButton: "swalConfirm",
+        cancelButton: "swalCancel",
+      },
+      inputValidator: (v) => {
+        if (!v || !v.trim()) return "Name can't be empty";
+      },
+    });
+
+    if (!name) return;
+    if (side === "home") {
+      const load = JSON.parse(localStorage.getItem("data"));
+      const team = load.teams.find((t) => t.id == teamID.id);
+      if (!team.roster) team.roster = [];
+      team.roster.push({ id: Date.now(), name: name.trim(), points: 0 });
+      localStorage.setItem("data", JSON.stringify(load));
+      sethomeplayers((prev) => [
+        ...prev,
+        { id: Date.now(), name: name.trim(), points: 0 },
+      ]);
+    } else {
+      setawayplayers((prev) => {
+        return [...prev, { id: Date.now(), name: name.trim(), points: 0 }];
+      });
+      const datastateaway = JSON.parse(localStorage.getItem("data"));
+      datastateaway.teams
+        .find((t) => t.id === Number(teamID.id))
+        .games.find((g) => g.id === selectedGameId)
+        .roster.push({ id: Date.now(), name: name.trim(), points: 0 });
+      localStorage.setItem("data", JSON.stringify(datastateaway));
+      setGames((prev) =>
+        prev.map((g) =>
+          g.id === selectedGameId
+            ? {
+                ...g,
+                roster: [
+                  ...(g.roster || []),
+                  { id: Date.now(), name: name.trim(), points: 0 },
+                ],
+              }
+            : g,
+        ),
+      );
+    }
+    toast.success("New Player Added");
   }
 
   async function editTeamName(id) {
@@ -97,6 +203,45 @@ function Teams() {
 
     toast.success("Team Deleted");
   }
+  function deletePlayer(playerID) {
+    setselectedplayer(null);
+    if (selectedGameId == null || selectedGameId === "Overall") return;
+
+    setGames((prev) =>
+      prev.map((g) =>
+        g.id === selectedGameId
+          ? { ...g, roster: (g.roster || []).filter((p) => p.id !== playerID) }
+          : g,
+      ),
+    );
+
+    const latest = JSON.parse(localStorage.getItem("data"));
+    const t = latest.teams.find(
+      (x) => x.id == teamID.id || x.id === Number(teamID.id),
+    );
+    const game = t?.games?.find((g) => g.id === selectedGameId);
+    if (game) {
+      game.roster = (game.roster || []).filter((p) => p.id !== playerID);
+      localStorage.setItem("data", JSON.stringify(latest));
+    }
+
+    toast.success("Player Deleted");
+  }
+  function deletehomePlayer(playerID) {
+    setselectedplayer(null);
+    sethomeplayers((prev) => prev.filter((p) => p.id !== playerID));
+
+    const latest = JSON.parse(localStorage.getItem("data"));
+    const t = latest.teams.find(
+      (x) => x.id == teamID.id || x.id === Number(teamID.id),
+    );
+
+    if (t) {
+      t.roster = (t.roster || []).filter((p) => p.id !== playerID);
+      console.log(latest);
+      localStorage.setItem("data", JSON.stringify(latest));
+    }
+  }
   function confirmDeleteGame(deleteFn) {
     Swal.fire({
       title: "Delete Game?",
@@ -121,9 +266,10 @@ function Teams() {
   }
 
   function focusGame(gameId) {
+    setselectedplayer(null);
     setSelectedGameId(gameId);
 
-    if (gameId === "overall") {
+    if (gameId === "Overall") {
       const allShots = games.flatMap((game) => game.shots || []);
       setSelectedShots(allShots);
       console.log(allShots);
@@ -140,8 +286,12 @@ function Teams() {
       toast.error("Select a game to log shots");
       return null;
     }
-    if (selectedGameId === "overall") {
+    if (selectedGameId === "Overall") {
       toast.error("Select a specific game to log shots");
+      return null;
+    }
+    if (selectedplayer == null) {
+      toast.error("Select a player to log shots");
       return null;
     }
     if (selectedGameId != null) {
@@ -150,40 +300,39 @@ function Teams() {
       const y = (e.clientY - rect.top) / rect.height;
       console.log(x, y);
       const result = await Swal.fire({
-        title: "Log Shot for Player Number",
-        input: "number",
-        inputPlaceholder: "Player Number",
+        title: "Log Shot",
         showCancelButton: true,
         showDenyButton: true,
         confirmButtonText: "Make",
         denyButtonText: "Miss",
         cancelButtonText: "Cancel",
-        returnInputValueOnDeny: true,
         buttonsStyling: false,
         customClass: {
           popup: "swalPopup",
           title: "swalTitle",
           htmlContainer: "swalText",
-          input: "swalInput",
           denyButton: "swalCancel",
           confirmButton: "swalConfirm",
           cancelButton: "swalCancel",
         },
-        inputValidator: (v) => {
-          if (!v || !v.trim()) return "Number can't be empty";
-        },
       });
 
-      if (!result.value) return;
+      if (!result.isConfirmed && !result.isDenied) return;
       if (result.isDismissed) return;
       const shotResult = result.isConfirmed ? "make" : "miss";
       const newShot = {
         id: Date.now(),
         x: x,
         y: y,
+        side: selectedawayplayers.find((t) => t.id == selectedplayer)?.name
+          ? "away"
+          : "home",
         points: paintHovered ? 2 : 3,
         result: shotResult,
-        player: result.value,
+        player:
+          selectedawayplayers.find((t) => t.id == selectedplayer)?.name ||
+          homeplayers.find((t) => t.id == selectedplayer)?.name,
+        playerID: selectedplayer,
       };
       setSelectedShots((prev) => {
         return [...prev, newShot];
@@ -203,6 +352,32 @@ function Teams() {
       );
     }
   }
+  function filtershots(side) {
+    if (selectedGameId == null) {
+      toast.error("Select a game first");
+      return;
+    }
+    setselectedshotsview(side);
+    if (selectedGameId == "Overall") {
+      if (side == "both") {
+        const allShots = games.flatMap((game) => game.shots || []);
+        setSelectedShots(allShots);
+      } else {
+        const allShots = games.flatMap((game) => game.shots || []);
+        const t = allShots.filter((t) => t.side == side);
+        setSelectedShots(t);
+      }
+    } else {
+      if (side == "both") {
+        const g = games.find((x) => x.id === selectedGameId);
+        setSelectedShots(g?.shots || []);
+      } else {
+        const g = games.find((x) => x.id === selectedGameId);
+        const t = g.shots.filter((t) => t.side == side);
+        setSelectedShots(t);
+      }
+    }
+  }
   return (
     <>
       <Toaster position="top-right" theme="dark" richColors closeButton />
@@ -214,6 +389,7 @@ function Teams() {
         <img src="/sk.png" className="backLogo"></img>
         <p className="logoName">StatKeeper | {team.name}</p>
       </div>
+      <div className="gametitles">Games vs Opponents</div>
       <div className="selectGame">
         <div className="gameCard" onClick={addGame}>
           <p className="gameName">New Game</p>
@@ -224,15 +400,15 @@ function Teams() {
             className="gameCard"
             style={{
               border:
-                selectedGameId === "overall"
+                selectedGameId === "Overall"
                   ? "1px solid white"
                   : "1px solid rgba(255, 255, 255, 0.12)",
             }}
             onClick={(e) => {
               e.stopPropagation();
-              focusGame("overall");
+              focusGame("Overall");
             }}
-            id={"overall"}
+            id={"Overall"}
           >
             <p className="gameName">Overall</p>
             <p className="shotAmmount">All Shots Logged</p>
@@ -274,8 +450,109 @@ function Teams() {
           </div>
         ))}
       </div>
+      {/* <div className="gametitles">Active Players</div>
+      <div className="activeplayerbox">
+        <div className="helperbox">
+          <div className="homeawaytitle">{team.name}</div>
+          <div className="playerBox"></div>
+        </div>
+        <div className="helperbox">
+          <div className="homeawaytitle">
+            {selectedGameId != null && selectedGameId != "Overall"
+              ? games.find((t) => t.id === selectedGameId).name
+              : "Away"}
+          </div>
+          <div className="playerBox"></div>
+        </div>
+      </div> */}
+      <div className="premainboxcontent">
+        <div>Display Shots:</div>
+        <div className="buttonselects">
+          <div
+            onClick={() => filtershots("home")}
+            className="selectbox"
+            style={{
+              border:
+                selectedshotsview === "home"
+                  ? "1px solid white"
+                  : "1px solid rgba(255, 255, 255, 0.12)",
+            }}
+          >
+            Home
+          </div>
+          <div
+            onClick={() => filtershots("both")}
+            className="selectbox"
+            style={{
+              border:
+                selectedshotsview === "both"
+                  ? "1px solid white"
+                  : "1px solid rgba(255, 255, 255, 0.12)",
+            }}
+          >
+            Both
+          </div>
+          <div
+            onClick={() => filtershots("away")}
+            className="selectbox"
+            style={{
+              border:
+                selectedshotsview === "away"
+                  ? "1px solid white"
+                  : "1px solid rgba(255, 255, 255, 0.12)",
+            }}
+          >
+            Away
+          </div>
+        </div>
+      </div>
       <div className="maincontentbox">
-        <div className="basketballBoard" onClick={setNumber}>
+        <div
+          className="rostercontainer"
+          style={{ height: boardHeight || undefined }}
+        >
+          <div>{team.name} Roster</div>
+          <div className="rosterbox">
+            <div className="rosterplayerBox" onClick={() => addPlayer("home")}>
+              <div>New Player</div>
+            </div>
+            {homeplayers.map((p) => (
+              <div
+                className="rosterplayerBox"
+                key={p.id}
+                onClick={() => setselectedplayer(p.id)}
+                style={{
+                  border:
+                    selectedplayer === p.id
+                      ? "1px solid white"
+                      : "1px solid rgba(255, 255, 255, 0.12)",
+                }}
+              >
+                <div>
+                  <FaTrash
+                    className="deleteIconGames"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      confirmDeleteGame(() => deletehomePlayer(p.id));
+                    }}
+                  />
+                  #{p.name}
+                  {" | "}
+                  {selectedShots.reduce(
+                    (sum, shot) =>
+                      sum +
+                      (shot.result == "make" && shot.playerID == p.id
+                        ? shot.points
+                        : 0),
+                    0,
+                  )}{" "}
+                  pts
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="basketballBoard" onClick={setNumber} ref={boardRef}>
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 600 550"
@@ -349,114 +626,66 @@ function Teams() {
                 left: `${shot.x * 100}%`,
                 top: `${shot.y * 100}%`,
                 transform: `translate(-50%, -50%)`,
-                background: shot.result == "make" ? "#5b2eff" : "grey",
+                background:
+                  shot.result === "miss"
+                    ? "grey"
+                    : shot.side === "home"
+                      ? "#5b2eff"
+                      : "#d94fd5",
               }}
             >
               {shot.player}
             </div>
           ))}
         </div>
-        <div className="statSheet">
-          <p className="stattitle">Overall Statistics</p>
-          <p className="statStat">
-            FG:{" "}
-            {selectedShots.reduce(
-              (sum, shot) =>
-                sum + (shot.result == "make" && shot.points == 2 ? 1 : 0),
-              0,
-            )}{" "}
-            /{" "}
-            {selectedShots.reduce(
-              (sum, shot) => sum + (shot.points == 2 ? 1 : 0),
-              0,
-            )}
-            {" ("}
-            {(() => {
-              const made = selectedShots.reduce(
-                (sum, shot) =>
-                  sum + (shot.result === "make" && shot.points === 2 ? 1 : 0),
-                0,
-              );
-
-              const attempts = selectedShots.reduce(
-                (sum, shot) => sum + (shot.points === 2 ? 1 : 0),
-                0,
-              );
-
-              return attempts === 0
-                ? "0%"
-                : Math.round((made / attempts) * 100) + "%";
-            })()}
-            {")"}
-          </p>
-          <p className="statStat">
-            3pt:{" "}
-            {selectedShots.reduce(
-              (sum, shot) =>
-                sum + (shot.result == "make" && shot.points == 3 ? 1 : 0),
-              0,
-            )}{" "}
-            /{" "}
-            {selectedShots.reduce(
-              (sum, shot) => sum + (shot.points == 3 ? 1 : 0),
-              0,
-            )}
-            {" ("}
-            {(() => {
-              const made = selectedShots.reduce(
-                (sum, shot) =>
-                  sum + (shot.result === "make" && shot.points === 3 ? 1 : 0),
-                0,
-              );
-
-              const attempts = selectedShots.reduce(
-                (sum, shot) => sum + (shot.points === 3 ? 1 : 0),
-                0,
-              );
-
-              return attempts === 0
-                ? "0%"
-                : Math.round((made / attempts) * 100) + "%";
-            })()}
-            {")"}
-          </p>
-          <p className="stattitle">Total Score</p>
-          <p className="statStat">
-            {selectedShots.reduce(
-              (sum, shot) => sum + (shot.result == "make" ? shot.points : 0),
-              0,
-            )}{" "}
-            pts
-          </p>
-          {(() => {
-            const topScorers = Object.entries(
-              selectedShots.reduce((acc, shot) => {
-                if (shot.result !== "make") return acc;
-                const player = shot.player;
-                const pts = Number(shot.points) || 0;
-                acc[player] = (acc[player] || 0) + pts;
-                return acc;
-              }, {}),
-            )
-              .map(([player, pts]) => ({ player, pts }))
-              .sort((a, b) => b.pts - a.pts)
-              .slice(0, 3);
-
-            return (
-              <>
-                <p className="stattitle">Top Scorers</p>
-
-                {[0, 1, 2].map((i) => {
-                  const p = topScorers[i];
-                  return (
-                    <p key={i} className="statStat">
-                      {i + 1}. {p ? `#${p.player} : ${p.pts} pts` : "--"}
-                    </p>
-                  );
-                })}
-              </>
-            );
-          })()}
+        <div
+          className="rostercontainer"
+          style={{ height: boardHeight || undefined }}
+        >
+          <div>
+            {selectedGameId != null && selectedGameId != "Overall"
+              ? games.find((t) => t.id === selectedGameId)?.name
+              : "Away"}{" "}
+            Roster
+          </div>
+          <div className="rosterbox">
+            <div className="rosterplayerBox" onClick={() => addPlayer("away")}>
+              <div>New Player</div>
+            </div>
+            {selectedawayplayers.map((p) => (
+              <div
+                className="rosterplayerBox"
+                key={p.id}
+                onClick={() => setselectedplayer(p.id)}
+                style={{
+                  border:
+                    selectedplayer === p.id
+                      ? "1px solid white"
+                      : "1px solid rgba(255, 255, 255, 0.12)",
+                }}
+              >
+                <FaTrash
+                  className="deleteIconGames"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    confirmDeleteGame(() => deletePlayer(p.id));
+                  }}
+                />
+                <div>
+                  #{p.name} {" | "}
+                  {selectedShots.reduce(
+                    (sum, shot) =>
+                      sum +
+                      (shot.result == "make" && shot.playerID == p.id
+                        ? shot.points
+                        : 0),
+                    0,
+                  )}{" "}
+                  pts
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </>
