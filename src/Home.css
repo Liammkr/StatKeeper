@@ -9,6 +9,7 @@
   margin: 50px;
   border-radius: 10px;
   border-color: white;
+  justify-content: space-between;
 }
 .logoName {
   color: #f8faff;
@@ -99,4 +100,61 @@
   margin-top: 0px;
   margin-bottom: -35px;
   font-size: 22px;
+}
+.logoandtext {
+  display: flex;
+  align-items: center;
+}
+.loginbutton {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+
+  width: 140px;
+  padding: 10px;
+  justify-content: center;
+  color: white;
+  border-radius: 15px;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(90deg, #5b2eff, #d94fd5, #ff5fa2) border-box;
+  justify-content: center;
+  text-align: center;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease;
+}
+.loginbutton:hover {
+  transform: translateY(-2px);
+  cursor: pointer;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#000, #000) padding-box,
+    linear-gradient(90deg, #5b2eff, #d94fd5, #ff5fa2) border-box;
+}
+.logoutfamily {
+  display: flex;
+  align-items: center;
+}
+.logoutbutton {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  width: 50px;
+  height: 50px;
+  padding: 10px;
+  justify-content: center;
+  color: white;
+  background-color: transparent;
+  border: none;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease;
+}
+.logoutbutton:hover {
+  transform: translateY(-2px);
+  cursor: pointer;
+}
+.userimage {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
 }

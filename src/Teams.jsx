@@ -4,8 +4,11 @@ import { Toaster, toast } from "sonner";
 import { FaArrowLeft, FaTrash, FaPencilAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import "./Teams.css";
-
+import { useAuth } from "./context/AuthContext";
+import { ref, get, set } from "firebase/database";
+import { auth, db } from "./firebase";
 function Teams() {
+  const { user, userData, authLoading, isAuthenticated } = useAuth();
   const [games, setGames] = useState([]);
   const [homeplayers, sethomeplayers] = useState([]);
   const [awayplayers, setawayplayers] = useState([]);
@@ -26,11 +29,33 @@ function Teams() {
   }
   document.title = "StatKeeper | " + team.name;
   useEffect(() => {
+    if (authLoading || !user) return;
+
+    async function loadFromFirebase() {
+      try {
+        const snapshot = await get(ref(db, `users/${user.uid}/data`));
+
+        if (snapshot.exists() && snapshot.val() != null) {
+          const data = snapshot.val();
+          console.log("loaded");
+          localStorage.setItem("data", data);
+        }
+      } catch (e) {
+        console.log("Failed to load from Firebase", e);
+      }
+    }
+
+    loadFromFirebase();
+  }, [authLoading, user]);
+  useEffect(() => {
     const raw = localStorage.getItem("data");
     const parsed = raw ? JSON.parse(raw) : { teams: [] };
 
     if (!raw) {
       localStorage.setItem("data", JSON.stringify(parsed));
+      if (authLoading == false && user != null) {
+        set(ref(db, `users/${user.uid}/data`), JSON.stringify(parsed));
+      }
     }
 
     setGames(parsed.teams.find((t) => t.id == teamID.id)?.games || []);
@@ -57,6 +82,9 @@ function Teams() {
     const latestData = JSON.parse(localStorage.getItem("data"));
     latestData.teams.find((t) => t.id == teamID.id).games = games;
     localStorage.setItem("data", JSON.stringify(latestData));
+    if (authLoading == false && user != null) {
+      set(ref(db, `users/${user.uid}/data`), JSON.stringify(latestData));
+    }
   }, [games]);
 
   useEffect(() => {
@@ -135,6 +163,9 @@ function Teams() {
       if (!team.roster) team.roster = [];
       team.roster.push({ id: Date.now(), name: name.trim(), points: 0 });
       localStorage.setItem("data", JSON.stringify(load));
+      if (authLoading == false && user != null) {
+        set(ref(db, `users/${user.uid}/data`), JSON.stringify(load));
+      }
       sethomeplayers((prev) => [
         ...prev,
         { id: Date.now(), name: name.trim(), points: 0 },
@@ -149,6 +180,9 @@ function Teams() {
         .games.find((g) => g.id === selectedGameId)
         .roster.push({ id: Date.now(), name: name.trim(), points: 0 });
       localStorage.setItem("data", JSON.stringify(datastateaway));
+      if (authLoading == false && user != null) {
+        set(ref(db, `users/${user.uid}/data`), JSON.stringify(datastateaway));
+      }
       setGames((prev) =>
         prev.map((g) =>
           g.id === selectedGameId
@@ -223,6 +257,9 @@ function Teams() {
     if (game) {
       game.roster = (game.roster || []).filter((p) => p.id !== playerID);
       localStorage.setItem("data", JSON.stringify(latest));
+      if (authLoading == false && user != null) {
+        set(ref(db, `users/${user.uid}/data`), JSON.stringify(latest));
+      }
     }
 
     toast.success("Player Deleted");
@@ -240,11 +277,14 @@ function Teams() {
       t.roster = (t.roster || []).filter((p) => p.id !== playerID);
       console.log(latest);
       localStorage.setItem("data", JSON.stringify(latest));
+      if (authLoading == false && user != null) {
+        set(ref(db, `users/${user.uid}/data`), JSON.stringify(latest));
+      }
     }
   }
   function confirmDeleteGame(deleteFn) {
     Swal.fire({
-      title: "Delete Game?",
+      title: "Delete?",
       text: "You can't undo this",
       icon: "warning",
       showCancelButton: true,
@@ -343,6 +383,9 @@ function Teams() {
         .games.find((g) => g.id === selectedGameId)
         .shots.push(newShot);
       localStorage.setItem("data", JSON.stringify(datastate));
+      if (authLoading == false && user != null) {
+        set(ref(db, `users/${user.uid}/data`), JSON.stringify(datastate));
+      }
       setGames((prev) =>
         prev.map((g) =>
           g.id === selectedGameId
