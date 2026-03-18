@@ -10,6 +10,7 @@ import { auth, db } from "./firebase";
 import { CiShare1 } from "react-icons/ci";
 
 function Teams() {
+  const apiKey = "4e5a78d0f1917ca4f4ce0d9344b91765";
   const { user, userData, authLoading, isAuthenticated } = useAuth();
   const [games, setGames] = useState([]);
   const [homeplayers, sethomeplayers] = useState([]);
@@ -201,7 +202,148 @@ function Teams() {
     }
     toast.success("New Player Added");
   }
+  async function importPlayers(side) {
+    if (
+      selectedGameId == null ||
+      (selectedGameId === "Overall" && side != "home")
+    ) {
+      toast.error("Select a game to add players");
+      return;
+    }
+    const { value: url } = await Swal.fire({
+      title: "Import Players",
+      input: "text",
+      inputValue: "",
+      inputPlaceholder: "maxpreps.com/ca/school/school/roster",
+      showCancelButton: true,
+      confirmButtonText: "Load",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        popup: "swalPopup",
+        title: "swalTitle",
+        htmlContainer: "swalText",
+        input: "swalInput",
+        confirmButton: "swalConfirm",
+        cancelButton: "swalCancel",
+      },
+      inputValidator: (v) => {
+        if (!v || !v.trim()) return "Invalid URL";
+      },
+    });
+    const encoded = encodeURIComponent(url);
+    toast.promise(
+      () =>
+        fetch(
+          `https://api.scraperapi.com/?api_key=${apiKey}&url=${encoded}`,
+        ).then((res) => res.text()),
 
+      {
+        loading: "Loading...",
+
+        success: (html) => {
+          console.log(html);
+          const json = JSON.parse(
+            html.match(
+              /<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/,
+            )[1],
+          );
+          const athleteData = json.props.pageProps.athleteData;
+
+          const seen = new Set();
+          const players = athleteData
+            .filter((p) => {
+              const id = p[29];
+              if (seen.has(id)) return false;
+              seen.add(id);
+              return true;
+            })
+            .map((p) => ({
+              number: p[8],
+              name: `${p[5]} ${p[6]}`,
+              grade: p[39],
+              position: p[12],
+              height: p[37],
+            }));
+
+          console.log(players);
+          players.forEach((player) => {
+            if (side === "home") {
+              const load = JSON.parse(localStorage.getItem("data"));
+              const team = load.teams.find((t) => t.id == teamID.id);
+              if (!team.roster) team.roster = [];
+              team.roster.push({
+                id: Date.now() + Math.random(),
+                name: player.number,
+                points: 0,
+              });
+              localStorage.setItem("data", JSON.stringify(load));
+              if (authLoading == false && user != null) {
+                set(ref(db, `users/${user.uid}/data`), JSON.stringify(load));
+              }
+              sethomeplayers((prev) => [
+                ...prev,
+                {
+                  id: Date.now() + Math.random(),
+                  name: player.number,
+                  points: 0,
+                },
+              ]);
+            } else {
+              setawayplayers((prev) => {
+                return [
+                  ...prev,
+                  {
+                    id: Date.now() + Math.random(),
+                    name: player.number,
+                    points: 0,
+                  },
+                ];
+              });
+              const datastateaway = JSON.parse(localStorage.getItem("data"));
+              datastateaway.teams
+                .find((t) => t.id === Number(teamID.id))
+                .games.find((g) => g.id === selectedGameId)
+                .roster.push({
+                  id: Date.now() + Math.random(),
+                  name: player.number,
+                  points: 0,
+                });
+              localStorage.setItem("data", JSON.stringify(datastateaway));
+              if (authLoading == false && user != null) {
+                set(
+                  ref(db, `users/${user.uid}/data`),
+                  JSON.stringify(datastateaway),
+                );
+              }
+              setGames((prev) =>
+                prev.map((g) =>
+                  g.id === selectedGameId
+                    ? {
+                        ...g,
+                        roster: [
+                          ...(g.roster || []),
+                          {
+                            id: Date.now() + Math.random(),
+                            name: player.number,
+                            points: 0,
+                          },
+                        ],
+                      }
+                    : g,
+                ),
+              );
+            }
+          });
+          return "Loaded";
+        },
+
+        error: (e) => {
+          return e.message || "Failed";
+        },
+      },
+    );
+  }
   async function editTeamName(id) {
     const game = games.find((t) => t.id === id);
     const { value: name } = await Swal.fire({
@@ -586,9 +728,16 @@ function Teams() {
         >
           <div>{team.name} Roster</div>
           <div className="rosterbox">
+            <div
+              className="rosterplayerBox"
+              onClick={() => importPlayers("home")}
+            >
+              <div>Import Players</div>
+            </div>
             <div className="rosterplayerBox" onClick={() => addPlayer("home")}>
               <div>New Player</div>
             </div>
+
             {homeplayers.map((p) => (
               <div
                 className="rosterplayerBox"
@@ -722,6 +871,12 @@ function Teams() {
             Roster
           </div>
           <div className="rosterbox">
+            <div
+              className="rosterplayerBox"
+              onClick={() => importPlayers("away")}
+            >
+              <div>Import Players</div>
+            </div>
             <div className="rosterplayerBox" onClick={() => addPlayer("away")}>
               <div>New Player</div>
             </div>
