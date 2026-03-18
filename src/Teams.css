@@ -305,3 +305,13 @@ body {
     linear-gradient(#000, #000) padding-box,
     linear-gradient(90deg, #5b2eff, #d94fd5, #ff5fa2) border-box;
 }
+.sharer {
+  margin-left: 10px;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease;
+}
+.sharer:hover {
+  transform: translateY(-2px);
+  cursor: pointer;
+}

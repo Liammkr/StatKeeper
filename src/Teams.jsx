@@ -5,8 +5,10 @@ import { FaArrowLeft, FaTrash, FaPencilAlt } from "react-icons/fa";
 import Swal from "sweetalert2";
 import "./Teams.css";
 import { useAuth } from "./context/AuthContext";
-import { ref, get, set } from "firebase/database";
+import { ref, get, set, push } from "firebase/database";
 import { auth, db } from "./firebase";
+import { CiShare1 } from "react-icons/ci";
+
 function Teams() {
   const { user, userData, authLoading, isAuthenticated } = useAuth();
   const [games, setGames] = useState([]);
@@ -37,7 +39,7 @@ function Teams() {
 
         if (snapshot.exists() && snapshot.val() != null) {
           const data = snapshot.val();
-          console.log("loaded");
+          console.log("Loaded Last Save: " + snapshot.val());
           localStorage.setItem("data", data);
         }
       } catch (e) {
@@ -421,6 +423,31 @@ function Teams() {
       }
     }
   }
+  function randomString(length = 10) {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+  function sharelink() {
+    const randomsharelink = randomString(10);
+    const data = JSON.parse(localStorage.getItem("data"));
+    const team = data.teams.find((t) => t.id == teamID.id);
+    console.log(team, randomsharelink);
+    set(ref(db, `sharedlinks/${user.uid}/${randomsharelink}`), {
+      data: JSON.stringify(team),
+    });
+    navigator.clipboard.writeText(
+      "https://stat-keeper.vercel.app/share/" +
+        user.uid +
+        "/" +
+        randomsharelink,
+    );
+    toast.success("Link copied to clipboard");
+  }
   return (
     <>
       <Toaster position="top-right" theme="dark" richColors closeButton />
@@ -431,6 +458,9 @@ function Teams() {
         ></FaArrowLeft>
         <img src="/sk.png" className="backLogo"></img>
         <p className="logoName">StatKeeper | {team.name}</p>
+        {team.myteam == false ? (
+          <CiShare1 className="sharer" onClick={() => sharelink()} />
+        ) : null}
       </div>
       <div className="gametitles">Games vs Opponents</div>
       <div className="selectGame">
