@@ -7,7 +7,6 @@ import "./Teams.css";
 import { useAuth } from "./context/AuthContext";
 import { ref, get, set, push } from "firebase/database";
 import { auth, db } from "./firebase";
-import { CiShare1 } from "react-icons/ci";
 
 function Teams() {
   const apiKey = "4e5a78d0f1917ca4f4ce0d9344b91765";
@@ -565,31 +564,6 @@ function Teams() {
       }
     }
   }
-  function randomString(length = 10) {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let result = "";
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
-  function sharelink() {
-    const randomsharelink = randomString(10);
-    const data = JSON.parse(localStorage.getItem("data"));
-    const team = data.teams.find((t) => t.id == teamID.id);
-    console.log(team, randomsharelink);
-    set(ref(db, `sharedlinks/${user.uid}/${randomsharelink}`), {
-      data: JSON.stringify(team),
-    });
-    navigator.clipboard.writeText(
-      "https://stat-keeper.vercel.app/share/" +
-        user.uid +
-        "/" +
-        randomsharelink,
-    );
-    toast.success("Link copied to clipboard");
-  }
   return (
     <>
       <Toaster position="top-right" theme="dark" richColors closeButton />
@@ -600,9 +574,6 @@ function Teams() {
         ></FaArrowLeft>
         <img src="/sk.png" className="backLogo"></img>
         <p className="logoName">StatKeeper | {team.name}</p>
-        {team.myteam == false ? (
-          <CiShare1 className="sharer" onClick={() => sharelink()} />
-        ) : null}
       </div>
       <div className="gametitles">Games vs Opponents</div>
       <div className="selectGame">
@@ -680,6 +651,7 @@ function Teams() {
           <div className="playerBox"></div>
         </div>
       </div> */}
+
       <div className="premainboxcontent">
         <div>Display Shots:</div>
         <div className="buttonselects">
